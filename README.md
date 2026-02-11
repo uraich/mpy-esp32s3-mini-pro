@@ -6,4 +6,5 @@ The esp32s3 mini pro comes with a number of peripherals:
 * a 128x128 pixel TFT display controlled by a ST7789 display controller
 * a IR LED
 * a qmi8658 **I**nertial **M**easurement **U**nit (IMU) providing an accelerometer and a gyroscope
+
 This collections of programs demonstrates how to use the devices.
