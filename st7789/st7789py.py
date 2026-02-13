@@ -306,6 +306,8 @@ class ST7789:
         self.physical_height = self.height = height
         self.xstart = 0
         self.ystart = 0
+        self.colorData = bytearray(2)
+        self.windowLocData = bytearray(4)
         self.spi = spi
         self.reset = reset
         self.dc = dc
@@ -1213,3 +1215,148 @@ class ST7789:
                 p += a2 - py + px
             self.line(x0 + x, y0 - y, x0 + x, y0 + y, color)
             self.line(x0 - x, y0 - y, x0 - x, y0 + y, color)
+
+    def block(self, x0, y0, x1, y1, data):
+        """Write a block of data to display.
+
+        Args:
+            x0 (int):  Starting X position.
+            y0 (int):  Starting Y position.
+            x1 (int):  Ending X position.
+            y1 (int):  Ending Y position.
+            data (bytes): Data buffer to write.
+        """
+        self._setwindowloc(x0,y0,x1,y1)
+        self._write(data = data)
+        
+    def _setwindowpoint( self, x,y ) :
+        '''Set a single point for drawing a color to.'''
+        x = self.xstart + x
+        y = self.ystart + y
+        self._write(command=_ST7789_CASET)            #Column address set.
+        self.windowLocData[0] = self.xstart
+        self.windowLocData[1] = x
+        self.windowLocData[2] = self.xstart
+        self.windowLocData[3] = x
+        self._write(data = self.windowLocData)
+        
+        self._write(command = _ST7789_RASET)            #Row address set.
+        self.windowLocData[0] = self.ystart
+        self.windowLocData[1] = y
+        self.windowLocData[2] = self.ystart
+        self.windowLocData[3] = y
+        self._write(data=self.windowLocData)
+        self._write(cmd = _ST7789_RAMWR)            #Write to RAM.
+
+    def _setwindowloc( self, x0, y0, x1, y1 ) :
+        '''Set a rectangular area for drawing a color to.'''
+        self._write(command =_ST7789_CASET)            #Column address set.
+        self.windowLocData[0] = self.xstart
+        self.windowLocData[1] = self.xstart + x0
+        self.windowLocData[2] = self.xstart
+        self.windowLocData[3] = self.xstart + x1
+        self._write(data=self.windowLocData)
+        
+        self._write(command=_ST7789_RASET)            #Row address set.
+        self.windowLocData[0] = self.ystart
+        self.windowLocData[1] = self.ystart + y0
+        self.windowLocData[2] = self.ystart
+        self.windowLocData[3] = self.ystart + y1
+        self._write(data=self.windowLocData)
+
+        self._write(command = _ST7789_RAMWR)            #Write to RAM.
+        
+    @micropython.native
+    def image(self, path, x=0, y=0, w=128, h=128):
+        """Draw a raw image from flash.
+
+        Args:
+            path (string): Image file path.
+            x (int): X coordinate of image left.  Default is 0.
+            y (int): Y coordinate of image top.  Default is 0.
+            w (int): Width of image.  Default is 128.
+            h (int): Height of image.  Default is 128.
+        """
+        x2 = x + w - 1
+        y2 = y + h - 1
+        if self.is_off_grid(x, y, x2, y2):
+            return
+        with open(path, "rb") as f:
+            chunk_height = 1024 // w
+            chunk_count, remainder = divmod(h, chunk_height)
+            chunk_size = chunk_height * w * 2
+            chunk_y = y
+            if chunk_count:
+                for c in range(0, chunk_count):
+                    buf = f.read(chunk_size)
+                    self.block(x, chunk_y,
+                               x2, chunk_y + chunk_height - 1,
+                               buf)
+                    chunk_y += chunk_height
+            if remainder:
+                buf = f.read(remainder * w * 2)
+                self.block(x, chunk_y,
+                           x2, chunk_y + remainder - 1,
+                           buf)
+                
+    # returns the display size    
+    def size(self):
+        return (self.width,self.height)
+    
+    def is_off_grid(self, xmin, ymin, xmax, ymax):
+        """Check if coordinates extend past display boundaries.
+
+        Args:
+            xmin (int): Minimum horizontal pixel.
+            ymin (int): Minimum vertical pixel.
+            xmax (int): Maximum horizontal pixel.
+            ymax (int): Maximum vertical pixel.
+        Returns:
+            boolean: False = Coordinates OK, True = Error.
+        """
+        if xmin < 0:
+            print('x-coordinate: {0} below minimum of 0.'.format(xmin))
+            return True
+        if ymin < 0:
+            print('y-coordinate: {0} below minimum of 0.'.format(ymin))
+            return True
+        if xmax >= self.width:
+            print('x-coordinate: {0} above maximum of {1}.'.format(
+                xmax, self.width - 1))
+            return True
+        if ymax >= self.height:
+            print('y-coordinate: {0} above maximum of {1}.'.format(
+                ymax, self.height - 1))
+            return True
+        return False
+    
+    def load_sprite(self, path, w, h):
+        """Load sprite image.
+
+        Args:
+            path (string): Image file path.
+            w (int): Width of image.
+            h (int): Height of image.
+        Notes:
+            w x h cannot exceed 2048
+        """
+        buf_size = w * h * 2
+        with open(path, "rb") as f:
+            return f.read(buf_size)
+        
+    def draw_sprite(self, buf, x, y, w, h):
+        """Draw a sprite (optimized for horizontal drawing).
+
+        Args:
+            buf (bytearray): Buffer to draw.
+            x (int): Starting X position.
+            y (int): Starting Y position.
+            w (int): Width of drawing.
+            h (int): Height of drawing.
+        """
+        x2 = x + w - 1
+        y2 = y + h - 1
+        if self.is_off_grid(x, y, x2, y2):
+            return
+        self.block(x, y, x2, y2, buf)
+        
