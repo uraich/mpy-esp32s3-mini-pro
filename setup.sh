@@ -28,4 +28,7 @@ fi
 echo ""
 echo "Uploading hw_esp32s3_mini_pro.py"
 ampy put hw_esp32s3_mini_pro.py /lib/hw_esp32s3_mini_pro.py
-
+echo "Uploading the display driver st7789py.py"
+ampy put st7789py/st7789py.py /lib/st7789py.py
+echo "Upload the display configurator"
+ampy put st7789py/st7789_config.py /lib/st7789_config.py
