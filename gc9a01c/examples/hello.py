@@ -29,7 +29,7 @@ def main():
     tft.init()
     tft.offset(2,1)  #offset for 0.85  GC9107
     tft.fill(0)
-    
+    '''
     sleep_ms(1000)
     
     for rotation in range(8):
@@ -49,12 +49,12 @@ def main():
                 random.getrandbits(8),
                 random.getrandbits(8),
             ))
-        sleep_ms(1000)
+        sleep_ms(5000)
         tft.fill(0)
-    
+    '''
     try:
         while True:
-            for rotation in range(8):
+            for rotation in range(4,8):
                 tft.rotation(rotation)
                 # tft.fill(0)
                 # col_max = tft.width() - font.WIDTH * 6
