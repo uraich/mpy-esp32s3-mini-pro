@@ -174,11 +174,13 @@ def main():
         sprites.append(Pacman(sprites, SPRITE_WIDTH, SPRITE_HEIGHT, SPRITE_STEPS))
 
     # move and draw sprites
-    while True:
-        for sprite in sprites:
-            sprite.move()
-            sprite.draw(blitable[sprite.step])
-        time.sleep(0.05)
-
+    try:
+        while True:
+            for sprite in sprites:
+                sprite.move()
+                sprite.draw(blitable[sprite.step])
+            time.sleep(0.05)
+    except KeyboardInterrupt:
+        tft.fill(gc9a01.BLACK)
 
 main()
