@@ -83,12 +83,12 @@ def test():
 
     sleep(5)
     
-    display.clear()
+    display.fill(display.BLACK)
     for r in range(CENTER_X, 0, -1):
         color = color565(*hsv_to_rgb(r / HALF_WIDTH, 1, 1))
         display.fill_circle(CENTER_X, CENTER_Y, r, color)
 
     sleep(9)
-    display.cleanup()
+    display.fill(display.BLACK)
 
 test()
